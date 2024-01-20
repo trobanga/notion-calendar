@@ -67,11 +67,7 @@ impl Event {
     }
 
     pub fn to_org(&self) -> String {
-        let mut timestamp = fmt_datetime_org_format(&self.start);
-        if let Some(date) = &self.end {
-            timestamp.push_str("--");
-            timestamp.push_str(&fmt_datetime_org_format(date));
-        };
+        let timestamp = fmt_datetime_org_format(&self.start, self.end.as_ref());
         [
             format!("* {}", self.title),
             format!("  {timestamp}"),
@@ -98,10 +94,60 @@ fn fmt_datetime(dt: &DateOrDateTime) -> String {
     }
 }
 
-fn fmt_datetime_org_format(dt: &DateOrDateTime) -> String {
-    match dt {
-        DateOrDateTime::Date(date) => date.format("<%Y-%m-%d %a>").to_string(),
-        DateOrDateTime::DateTime(dt) => dt.format("<%Y-%m-%d %a %H:%M>").to_string(),
+/// Return the event date as a String in org-mode format.
+/// If the start and end dates are at the same day and both have a time,
+/// we use SCHEDULED, otherwise we use a range.
+fn fmt_datetime_org_format(start: &DateOrDateTime, end: Option<&DateOrDateTime>) -> String {
+    if let Some(end) = end {
+        match end {
+            DateOrDateTime::Date(end_date) => match start {
+                DateOrDateTime::Date(start_date) => {
+                    if start_date == end_date {
+                        start_date.format("<%Y-%m-%d %a>").to_string()
+                    } else {
+                        let mut d = start_date.format("<%Y-%m-%d %a>--").to_string();
+                        d.push_str(&end_date.format("<%Y-%m-%d %a>").to_string());
+                        d
+                    }
+                }
+                DateOrDateTime::DateTime(start_dt) => {
+                    if &start_dt.date_naive() == end_date {
+                        start_dt.format("<%Y-%m-%d %a %H:%M>").to_string()
+                    } else {
+                        let mut d = start_dt.format("<%Y-%m-%d %a %H:%M>--").to_string();
+                        d.push_str(&end_date.format("<%Y-%m-%d %a>").to_string());
+                        d
+                    }
+                }
+            },
+            DateOrDateTime::DateTime(end_dt) => match start {
+                DateOrDateTime::Date(start_date) => {
+                    if start_date == &end_dt.date_naive() {
+                        start_date.format("<%Y-%m-%d %a>").to_string()
+                    } else {
+                        let mut d = start_date.format("<%Y-%m-%d %a>--").to_string();
+                        d.push_str(&end_dt.format("<%Y-%m-%d %a %H:%M>").to_string());
+                        d
+                    }
+                }
+                DateOrDateTime::DateTime(start_dt) => {
+                    if &start_dt.date_naive() == &end_dt.date_naive() {
+                        let mut d = start_dt.format("SCHEDULED: <%Y-%m-%d %a %H:%M").to_string();
+                        d.push_str(&end_dt.format("-%H:%M>").to_string());
+                        d
+                    } else {
+                        let mut d = start_dt.format("<%Y-%m-%d %a %H:%M>--").to_string();
+                        d.push_str(&end_dt.format("<%Y-%m-%d %a %H:%M>").to_string());
+                        d
+                    }
+                }
+            },
+        }
+    } else {
+        match start {
+            DateOrDateTime::Date(date) => date.format("<%Y-%m-%d %a>").to_string(),
+            DateOrDateTime::DateTime(dt) => dt.format("<%Y-%m-%d %a %H:%M>").to_string(),
+        }
     }
 }
 
