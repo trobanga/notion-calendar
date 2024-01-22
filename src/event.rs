@@ -70,6 +70,7 @@ impl Event {
         let timestamp = fmt_datetime_org_format(&self.start, self.end.as_ref());
         [
             format!("* {}", self.title),
+            format!("  :PROPERTIES:\n  :ID: {}\n  :END:", self.id),
             format!("  {timestamp}"),
             format!("  {}", self.link_to_notion_event()),
         ]
