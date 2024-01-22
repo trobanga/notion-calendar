@@ -132,7 +132,7 @@ fn fmt_datetime_org_format(start: &DateOrDateTime, end: Option<&DateOrDateTime>)
                 }
                 DateOrDateTime::DateTime(start_dt) => {
                     if &start_dt.date_naive() == &end_dt.date_naive() {
-                        let mut d = start_dt.format("SCHEDULED: <%Y-%m-%d %a %H:%M").to_string();
+                        let mut d = start_dt.format("<%Y-%m-%d %a %H:%M").to_string();
                         d.push_str(&end_dt.format("-%H:%M>").to_string());
                         d
                     } else {
